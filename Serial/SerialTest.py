@@ -4,7 +4,10 @@ from multiprocessing import Process, Queue
 from time import sleep
 import binascii
 import numpy as np
+from bitstring import BitArray
+import os
 
+filePath = "C:\InCabin"
 flag = True
 data_srt = bytearray()
 count = 0
@@ -14,12 +17,7 @@ def threadTest(ser):
         if flag == True:
             global count
             global data_str
-            #ser.read_all() #Read all bytes currently available in the buffer of the OS.
-            #ser.read_until() #Read until a termination sequence is found ('' by default), the size is exceeded or until timeout occurs.
-            #ser.readall() #Read until EOF, using multiple read() call.
-            #ser.readline()
-            #ser.readlines()
-            
+
             '''
             if (ser.inWaiting()>0):
                 data_str = ser.read(ser.inWaiting())
@@ -29,11 +27,14 @@ def threadTest(ser):
                 print('\n')
                 print('\n')
             '''
+
             if (ser.inWaiting()>0):
+                #print("Real:")
+                #print(ser.inWaiting())
                 data_str = ser.read(ser.inWaiting()) ##속도를 많이 잡아먹음
                 print(count)
                 count += 1
-        
+
         else:
             break
         sleep(0.001)
@@ -43,16 +44,59 @@ def ProcessPointCloud():
     while True:
         if flag == True:
             if(len(data_str)>7):
-                #data = data_str.hex()
-                #dataArray = np.asarray(data)
-                if(data_str[0] == 2 and data_str[1] == 1 and data_str[2] == 4 and data_str[3] == 3 and data_str[4] == 6 and data_str[5] == 5 and data_str[6] == 8 and data_str[7]==7):
-                    print((dataArray))
+                data = data_str.hex()
+                if(''.join(data[:8*2]) == '0201040306050807'):
+                    actualData = ''.join(data[:FindPacketLength(data[12*2:(12+4)*2])])
+                    numTarget = FindNumOfTarget(actualData[28*2:32*2])
+                    
+                    while True:
+                        try:
+                            f = open(filePath+"\point_cloud.txt", 'w')
+                            f.write(actualData)
+                            f.close()
+                            print("Write Done!")
+                            break
+                        except:
+                            sleep(0.001)
+
+
+                    #print("Actual")
+                    #print(FindPacketLength(data[12*2:(12+4)*2]))
+                    #print(numTarget)
         else:
             break
         sleep(0.001)
 
+def FindNumOfTarget(bList):
+    if(len(bList)>0):  
+        rList = bList[::-1]
+        tempList = []
+        for i in range(4):
+            tempList.append(rList[2*i+1])
+            tempList.append(rList[2*i])
+        nList = ''.join(tempList)
+        num = int(nList, 16)
+        return num 
+
+def FindPacketLength(bList):
+    if(len(bList)>0):   
+        rList = bList[::-1]
+        tempList = []
+        for i in range(4):
+            tempList.append(rList[2*i+1])
+            tempList.append(rList[2*i])
+        nList = ''.join(tempList)
+        length = int(nList, 16)
+        return length 
+
 def main():
     global flag
+
+    #Create point cloud directory
+    if not os.path.isdir(filePath):
+        os.mkdir(filePath)
+
+
     ser = serial.Serial(port='COM7', baudrate = 921600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=None)
     ser.read
     print(ser.portstr)
