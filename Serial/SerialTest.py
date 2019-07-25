@@ -47,7 +47,7 @@ def ProcessPointCloud():
                 data = data_str.hex()
                 if(''.join(data[:8*2]) == '0201040306050807'):
                     actualData = ''.join(data[:FindPacketLength(data[12*2:(12+4)*2])])
-                    numTarget = FindNumOfTarget(actualData[28*2:32*2])
+                    #numTarget = FindNumOfTarget(actualData[28*2:32*2])
                     
                     while True:
                         try:
@@ -79,15 +79,18 @@ def FindNumOfTarget(bList):
         return num 
 
 def FindPacketLength(bList):
-    if(len(bList)>0):   
-        rList = bList[::-1]
-        tempList = []
-        for i in range(4):
-            tempList.append(rList[2*i+1])
-            tempList.append(rList[2*i])
-        nList = ''.join(tempList)
-        length = int(nList, 16)
-        return length 
+    try:
+        if(len(bList)>0):   
+            rList = bList[::-1]
+            tempList = []
+            for i in range(4):
+                tempList.append(rList[2*i+1])
+                tempList.append(rList[2*i])
+            nList = ''.join(tempList)
+            length = int(nList, 16)
+            return length 
+    except:
+        return 0
 
 def main():
     global flag
@@ -97,7 +100,7 @@ def main():
         os.mkdir(filePath)
 
 
-    ser = serial.Serial(port='COM7', baudrate = 921600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=None)
+    ser = serial.Serial(port='COM5', baudrate = 921600, parity=serial.PARITY_NONE, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=None)
     ser.read
     print(ser.portstr)
     print(ser.is_open)
@@ -105,7 +108,7 @@ def main():
     threadProcess = threading.Thread(target=ProcessPointCloud)
     thread.start()
     threadProcess.start()
-    sleep(5)
+    sleep(12000)
     flag = False
     thread.join()
     threadProcess.join()
